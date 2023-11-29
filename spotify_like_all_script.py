@@ -2,11 +2,6 @@ import argparse
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
-client_id = 'e4b7995e48d14b2ca810a1f79c0dabc9'
-client_secret = '4112d697ba5f45b280f090bd5144a2df'
-
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri='http://localhost:8888/callback', scope='playlist-read-private user-library-read user-library-modify'))
-
 def get_user_playlists():
     limit = 50
     offset = 0
@@ -29,9 +24,6 @@ def get_user_playlists():
 
 def get_songs_from_playlists(playlists):
     songs = []
-
-    uri = 'spotify:playlist:' + playlists[1]
-    res = sp.playlist_tracks(uri);
 
     print("Fetching Data")
 
@@ -65,34 +57,44 @@ def extract_current_likes():
     return tracks
 
 def dislike_songs(songs):
-    for idx, song in enumerate(songs):
-        sp.current_user_saved_tracks_remove(tracks=[song])
-        print(song);
-        if idx == 2: 
-            break;
+    if not songs:
+        return
+    
+    for song in songs:
+        sp.current_user_saved_tracks_delete(tracks=[song])
+
+
+def like_songs(new_songs):
+    if not new_songs:
+        return
+    
+    for song in new_songs:
+        sp.current_user_saved_tracks_add(tracks=[song])
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument('--id', '-i', type=str, help="client id")
+    parser.add_argument('--secret', '-s', type=str, help="client secret")
     parser.add_argument('--remove-old', '-r', action='store_true', help="To remove previous liked songs")
     parser.add_argument('--new-user', '-u', action='store_true', help="Remove old user cache")
 
     args = parser.parse_args()
 
-    # if args.new_user:
-    #     print("New User")
-    #     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri='http://localhost:8888/callback', scope='playlist-read-private user-library-read user-library-modify'))
+    client_id = args.id
+    client_secret = args.secret
+
+    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri='http://localhost:8888/callback', scope='playlist-read-private user-library-read user-library-modify'))
 
     if args.remove_old:
         print("Remove Songs")
         liked_songs = extract_current_likes()      
         dislike_songs(liked_songs)  
     
-    # playlists = get_user_playlists()
+    playlists = get_user_playlists()
     
-    # new_songs = get_songs_from_playlists(playlists)
+    new_songs = get_songs_from_playlists(playlists)
 
-    # like_songs(new_songs)
+    like_songs(new_songs)
 
-    # print("Done: " + str(len(songs)))
-
+    print("Done ✅")
